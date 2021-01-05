@@ -54,9 +54,12 @@ import re
 #    9541:	e8 da eb ff ff       	callq  8120 <__stack_chk_fail@plt>
 #    9546:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
 #    834f:	90                   	nop
+#   105d8:	0f 88 a2 02 00 00    	js     10880 <__cxa_finalize@plt+0xc1b0>
+#   105de:	de c9                	fmulp  %st,%st(1)
+#   105e0:	f6 44 24 48 10       	testb  $0x10,0x48(%rsp)
 
 
-line_re = re.compile(r'^ *[0-9a-f]+:\t *([0-9a-f][0-9a-f] )+ *\t([a-z][a-z0-9% \(\),\*\$]*) *(?: *|#.*)$')
+line_re = re.compile(r'^ *[0-9a-f]+:\t *([0-9a-f][0-9a-f] )+ *\t([a-z][a-z0-9% \(\),\*\$]*) *(<[^>]+>)?(?: *|#.*)$')
 assert(line_re.match('   166f8:\tc3                   \tretq'))
 
 import collections
@@ -77,7 +80,13 @@ with fileinput.input() as f:
     arguments = re.sub(r'^[a-z0-9]+(?: +([^ ].*)|)$', r'\1', instruction)  # Strip the opcode. # The (?:  |) is to support retq, cltd, etc
     arguments = re.sub("[(),]", " ", arguments)  # We leave indirect calls and jumps, like jmpq *0x???, or callq *%rax
     for register in arguments.strip().split():
-      registers[register.strip()] += 1
+      register = register.strip()
+      register = re.sub(r'^[0-9a-f]{6,6}$', '111111', register)
+      register = re.sub(r'^[0-9a-f]{5,5}$', '11111', register)
+      register = re.sub(r'^[0-9a-f]{4,4}$', '1111', register)
+      register = re.sub(r'^[0-9a-f]{3,3}$', '111', register)
+      register = re.sub(r'^[0-9a-f]{2,2}$', '11', register)
+      registers[register] += 1
 
     # opcodes[opcode] += 1
     opcode = re.sub(" +.*", "", instruction)  # Strip arguments.  # Note. This regexp also works for retq, cltd actually.

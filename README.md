@@ -27,17 +27,25 @@ Tested with objdump from binutils 2.35.1, and Python 3.8, on Linux.
 Remaining immediates, like 1, 4, 8, 2, 0, 3, often come from `lea`, or indexed
 addressing modes.
 
+`11111`, `1111`, `111`, `11`, means some immediete in decimal form was in
+assymly, with that many decimal digits. I.e. `9123`, is converted to `1111`.
+One digit ones, are left untouched.
+
 `*0x???`, `*%rax`, etc, are indirect calls and jumps.
 
 ```
-objdump -d /bin/ls | ./elf-opcode-stats.py
+$ objdump -d /bin/ls | ./elf-opcode-stats.py
 
 Opcode statistics:
 5465 mov
+1210 callq
 1090 cmp
+1045 je
+ 951 jmpq
  926 test
  801 lea
  744 xor
+ 737 jne
  734 pop
  596 add
  543 push
@@ -47,26 +55,33 @@ Opcode statistics:
  255 movzbl
  239 and
  217 cmpb
+ 203 jmp
  195 movb
  185 nopw
  140 movl
+ 130 jbe
  126 pushq
- 125 jmpq
  120 movq
  101 sete
+  99 ja
   97 or
   84 movslq
+  80 jae
   72 xchg
+  66 jg
   64 shr
   64 nop
   60 cmpq
+  58 js
   48 cmpl
   45 sar
   42 cmove
+  42 jl
   41 shl
   39 imul
+  38 jb
   37 movups
-  34 callq
+  33 jle
   33 cmovne
   33 movdqa
   28 sbb
@@ -78,6 +93,7 @@ Opcode statistics:
   22 testb
   22 pxor
   22 fstp
+  21 jns
   18 cvtsi2ss
   17 movsbl
   17 comiss
@@ -86,6 +102,7 @@ Opcode statistics:
   12 fldcw
   11 movzwl
   11 not
+  11 jo
   10 addss
   10 fildll
    9 seto
@@ -124,7 +141,9 @@ Opcode statistics:
    3 fdivrp
    3 fcomip
    3 fucomi
+   3 jp
    3 fsub
+   2 jge
    2 bt
    2 subq
    2 mulsd
@@ -132,6 +151,7 @@ Opcode statistics:
    2 movaps
    2 fmulp
    2 adc
+   2 jno
    2 cmovle
    2 movsbq
    1 movw
@@ -155,8 +175,10 @@ Register and other opcode arguments statistics in general (source and destinatio
 4523 0x???
 3714 $0x???
 3698 %rax
+3053 1111
 1801 %rsp
 1740 %eax
+1519 11111
 1458 %rdi
 1375 %rip
 1342 %rbx

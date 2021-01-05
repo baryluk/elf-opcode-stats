@@ -10,6 +10,12 @@ Requires objdump and python3.
 
 Tested with objdump from binutils 2.35.1, and Python 3.8, on Linux.
 
+Simple use:
+
+```
+# ./elf-opcode-stats.py /bin/echo
+
+```
 
 # TODO
 
@@ -32,9 +38,20 @@ One digit ones, are left untouched.
 
 `*0x???`, `*%rax`, etc, are indirect calls and jumps.
 
+
+```
+$ ./elf-opcode-stats.py /bin/ls
+```
+
+or
+
 ```
 $ objdump -d /bin/ls | ./elf-opcode-stats.py
+```
 
+Output:
+
+```
 Opcode statistics:
 5573 mov
 1210 callq

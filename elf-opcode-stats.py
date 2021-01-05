@@ -106,10 +106,10 @@ registers = collections.defaultdict(int)
 
 total_instruction_count = 0
 
-import sys
-import fileinput
 
-with fileinput.input() as f:
+def process_data(f):
+  global instructions, opcodes, registers, total_instruction_count
+  global line_re, opcode_re
   for line in f:
     line = line.rstrip()
     m = line_re.match(line)
@@ -118,7 +118,8 @@ with fileinput.input() as f:
       # print(line)
       continue
     instruction = m.group(2).strip()  # including immediates, registers, flags, etc.
-    instructions[instruction] += 1
+    # Disable this by default, as it consumes memory quite a lot.
+    # instructions[instruction] += 1
     instruction = re.sub(r'0x[0-9a-f]+', "0x???", instruction)
 
     arguments = re.sub(r'^(?:(?:data16|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+(?: +([^ ].*)|)$', r'\1', instruction)  # Strip the opcode. # The (?:  |) is to support retq, cltd, etc
@@ -144,27 +145,35 @@ with fileinput.input() as f:
     opcodes[opcode] += 1
     total_instruction_count += 1
 
+import sys
+import subprocess
+
+if sys.argv[1:]:
+  for filename in sys.argv[1:]:
+    with subprocess.Popen(['objdump', '-d', filename], stdout=subprocess.PIPE, encoding='utf-8') as proc:
+      process_data(proc.stdout)
+else:
+  process_data(sys.stdin)
+
 # For debugging what is not captured yet by regexp.
 # print(total_instruction_count)
 
-#for instruction in sorted(instructions, key=lambda instruction: instructions[instruction], reverse=True):
-#  print(instructions[instruction], instruction)
+
+def print_stats(d:dict):
+  width = None
+  for k in sorted(d, key=lambda k: d[k], reverse=True):
+    v = d[k]
+    if not width:
+      width = len(str(v))
+    print(f"{v:{width}}", k)
+
+# print("Instruction statistics:")
+# print_stats(instructions)
 
 
 print("Opcode statistics:")
-width = None
-for opcode in sorted(opcodes, key=lambda opcode: opcodes[opcode], reverse=True):
-  count = opcodes[opcode]
-  if not width:
-    width = len(str(count))
-  print(f"{count:{width}}", opcode)
-
+print_stats(opcodes)
 
 print()
 print("Register and other opcode arguments statistics in general (source and destination):")
-width = None
-for register in sorted(registers, key=lambda register: registers[register], reverse=True):
-  count = registers[register]
-  if not width:
-    width = len(str(count))
-  print(f"{count:{width}}", register)
+print_stats(registers)

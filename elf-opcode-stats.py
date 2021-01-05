@@ -83,7 +83,7 @@ assert(line_re.match('   166f8:\tc3                   \tretq'))
 assert(line_re.match('   18161:	41 ff 14 df          	callq  *(%r15,%rbx,8)'))
 
 
-opcode_re = re.compile(r'^((?:(?:data16|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+)(?: .*|)$')
+opcode_re = re.compile(r'^((?:(?:data16(?: data16)*|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+)(?: .*|)$')
 def test_op(instruction, expected):
   m = opcode_re.match(instruction)
   assert m, "f{instruction} didn't match opcode at all"
@@ -98,7 +98,7 @@ test_op('a b c', 'a')
 test_op('mov ax,20', 'mov')  # ;)
 test_op('jmp 0x123', 'jmp')
 test_op('callq *0x123', 'callq')
-
+test_op('data16 data16 data16 mov %fs:0x0,%rax', 'data16 data16 data16 mov')
 
 import collections
 instructions = collections.defaultdict(int)
@@ -125,15 +125,6 @@ def process_data(f):
     # instructions[instruction] += 1
     instruction = re.sub(r'0x[0-9a-f]+', "0x???", instruction)
 
-    arguments = re.sub(r'^(?:(?:data16|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+(?: +([^ ].*)|)$', r'\1', instruction)  # Strip the opcode. # The (?:  |) is to support retq, cltd, etc
-    arguments = re.sub("[(),]", " ", arguments)  # We leave indirect calls and jumps, like jmpq *0x???, or callq *%rax
-    for register in arguments.strip().split():
-      register = register.strip()
-      register = re.sub(r'^[0-9a-f]{2,7}$', register_replacer, register)
-      if register == "*":
-         # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
-         continue 
-      registers[register] += 1
 
     # opcodes[opcode] += 1
     opcode = opcode_re.match(instruction)
@@ -141,8 +132,19 @@ def process_data(f):
       print(f'Warning: Unrecognized instruction format: {instruction}. Please report a bug.', file=sys.stderr)
       continue
     opcode = opcode[1]
+    assert instruction.startswith(opcode)
     opcodes[opcode] += 1
     total_instruction_count += 1
+
+    arguments = instruction[len(opcode):].strip()
+    arguments = re.sub("[(),]", " ", arguments)  # We leave indirect calls and jumps, like jmpq *0x???, or callq *%rax
+    for register in arguments.strip().split():
+      register = register.strip()
+      register = re.sub(r'^[0-9a-f]{2,7}$', register_replacer, register)
+      if register == "*":
+         # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
+         continue
+      registers[register] += 1
 
 import sys
 import subprocess

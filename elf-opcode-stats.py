@@ -110,11 +110,13 @@ total_instruction_count = 0
 def register_replacer(m):
   return '1'*len(m.group(0))
 
+tr_table = "".maketrans("(),", "   ")
+
 def process_data(f):
   global instructions, opcodes, registers, total_instruction_count
   global line_re, opcode_re
   for line in f:
-    line = line.rstrip()
+    # line = line.rstrip()
     m = line_re.match(line)
     if not m:
       # Debugging unmatched lines.
@@ -136,10 +138,9 @@ def process_data(f):
     opcodes[opcode] += 1
     total_instruction_count += 1
 
-    arguments = instruction[len(opcode):].strip()
-    arguments = re.sub("[(),]", " ", arguments)  # We leave indirect calls and jumps, like jmpq *0x???, or callq *%rax
-    for register in arguments.strip().split():
-      register = register.strip()
+    arguments = instruction[len(opcode):].lstrip()
+    arguments = arguments.translate(tr_table)
+    for register in arguments.split():
       register = re.sub(r'^[0-9a-f]{2,7}$', register_replacer, register)
       if register == "*":
          # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.

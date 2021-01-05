@@ -17,7 +17,6 @@ Tested with objdump from binutils 2.35.1, and Python 3.8, on Linux.
 * TODO(baryluk): Statistics of addressing modes.
 * TODO(baryluk): Statistics of ngrams of opcodes maybe?
 * TODO(baryluk): Opcode classification (MOV, ALU, FPU, CTRL)
-* TODO(baryluk): LOCK and REP prefixes.
 
 
 # Example
@@ -37,36 +36,37 @@ One digit ones, are left untouched.
 $ objdump -d /bin/ls | ./elf-opcode-stats.py
 
 Opcode statistics:
-5465 mov
+5573 mov
 1210 callq
 1090 cmp
 1045 je
  951 jmpq
  926 test
- 801 lea
+ 889 lea
  744 xor
  737 jne
  734 pop
  596 add
  543 push
  533 nopl
- 408 sub
+ 462 sub
  364 retq
- 255 movzbl
+ 280 nopw
+ 269 movzbl
  239 and
- 217 cmpb
+ 234 cmpb
+ 205 movb
  203 jmp
- 195 movb
- 185 nopw
- 140 movl
+ 141 movl
  130 jbe
  126 pushq
- 120 movq
+ 121 movq
  101 sete
   99 ja
   97 or
   84 movslq
   80 jae
+  73 data16 nopw
   72 xchg
   66 jg
   64 shr
@@ -98,9 +98,9 @@ Opcode statistics:
   17 movsbl
   17 comiss
   16 fxch
+  14 movzwl
   14 cmovae
   12 fldcw
-  11 movzwl
   11 not
   11 jo
   10 addss
@@ -124,6 +124,7 @@ Opcode statistics:
    6 fistpll
    6 fstpt
    5 cmova
+   5 repz cmpsb
    5 ror
    5 fldt
    5 setl
@@ -158,6 +159,7 @@ Opcode statistics:
    1 hlt
    1 setbe
    1 cmovbe
+   1 rep stos
    1 shlq
    1 divq
    1 cmovge
@@ -173,55 +175,58 @@ Opcode statistics:
 
 Register and other opcode arguments statistics in general (source and destination):
 4523 0x???
-3714 $0x???
-3698 %rax
+4168 %rax
+3743 $0x???
 3053 1111
-1801 %rsp
-1740 %eax
+1802 %rsp
+1752 %eax
 1519 11111
-1458 %rdi
-1375 %rip
-1342 %rbx
-1133 %rsi
-1075 %rbp
- 993 %rdx
- 971 %edx
- 955 %r12
- 687 %rcx
- 663 %r13
- 639 %edi
- 542 1
- 539 %r14
- 499 %esi
- 494 %r15
- 464 %al
- 436 %ecx
- 336 %r8
- 253 %r8d
- 202 %r12d
- 196 %dl
- 185 %r9
+1484 %rdi
+1380 %rip
+1368 %rbx
+1154 %rsi
+1135 %rbp
+1028 %rdx
+ 991 %edx
+ 963 %r12
+ 745 1
+ 730 %rcx
+ 675 %r13
+ 646 %edi
+ 545 %r14
+ 518 %r15
+ 505 %esi
+ 467 %al
+ 441 %ecx
+ 348 %r8
+ 257 %r8d
+ 204 %r12d
+ 200 %dl
+ 189 -0x???
+ 189 %r9
  182 %ebx
+ 168 %cs:0x???
  165 %ebp
- 156 %ax
+ 158 %ax
  121 *0x???
- 113 %r13d
+ 115 %r13d
+ 112 %r9d
+ 107 %fs:0x???
  106 %r11d
- 106 %r9d
  106 %xmm0
+  97 %r10
   97 %st
   92 %cl
-  89 %r10
-  74 %r15d
+  75 %r15d
   73 %xmm1
   71 %r14d
-  65 %r11
+  66 %r11
+  58 8
   54 4
-  48 8
-  46 %r10d
+  50 %r10d
+  37 %r12b
+  35 %sil
   35 2
-  33 %sil
-  33 %r12b
   31 %bpl
   30 %r13b
   29 %xmm2
@@ -229,16 +234,18 @@ Register and other opcode arguments statistics in general (source and destinatio
   23 %r15b
   21 *%rax
   17 0
-  11 %r8b
+  13 %r8b
   11 %bl
   10 %r9b
    9 %ah
    8 %r14b
    7 %xmm3
    7 *%rbp
+   6 %es:
    6 *%rdx
    5 %xmm4
-   4 %dx
+   5 %dx
+   5 %ds:
    2 *%rcx
    2 %r8w
    2 %xmm5
@@ -248,5 +255,4 @@ Register and other opcode arguments statistics in general (source and destinatio
    1 %r10w
    1 %cx
    1 *%rbx
-   1 *
 ```

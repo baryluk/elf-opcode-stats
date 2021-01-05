@@ -46,7 +46,7 @@ import re
 #    800e:	74 02                	je     8012 <__acosf_finite@plt-0x1e>
 #    8010:	ff d0                	callq  *%rax
 #    8012:	48 83 c4 08          	add    $0x8,%rsp
-#    8016:	c3                   	retq...
+#    8016:	c3                   	retq   
 #    8020:	ff 35 f2 5e 01 00    	pushq  0x15ef2(%rip)        # 1df18 <graphene_simd4x4f_transpose_in_place@@Base+0x7868>
 #    8026:	ff 25 f4 5e 01 00    	jmpq   *0x15ef4(%rip)        # 1df20 <graphene_simd4x4f_transpose_in_place@@Base+0x7870>
 #    802c:	0f 1f 40 00          	nopl   0x0(%rax)
@@ -57,27 +57,71 @@ import re
 #   105d8:	0f 88 a2 02 00 00    	js     10880 <__cxa_finalize@plt+0xc1b0>
 #   105de:	de c9                	fmulp  %st,%st(1)
 #   105e0:	f6 44 24 48 10       	testb  $0x10,0x48(%rsp)
+#    fad2:	48 8d 05 c7 f6 ff ff 	lea    -0x939(%rip),%rax        # f1a0 <__cxa_finalize@plt+0xaad0>
+#    fc54:	49 c7 44 24 f8 00 00 	movq   $0x0,-0x8(%r12)
+#    fd26:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
+#    fd56:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
+#    fe63:	64 48 2b 04 25 28 00 	sub    %fs:0x28,%rax
+#    fed4:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+#    fe8f:	00
+#    fd7b:	00 00
+#    fd5d:	00 00 00
+#    fedb:	00 00 00 00
+#   150e2:	02
+#   1512d:	fd
+#   1077f:	cc cc cc
+#   15be4:	00 00 04
+#    fab7:	00 80 3f
+#    fac8:	fd b4 3f
+#    ad54:	f3 48 ab             	rep stos %rax,%es:(%rdi)
+#   18161:	41 ff 14 df          	callq  *(%r15,%rbx,8)
 
 
-line_re = re.compile(r'^ *[0-9a-f]+:\t *([0-9a-f][0-9a-f] )+ *\t([a-z][a-z0-9% \(\),\*\$]*) *(<[^>]+>)?(?: *|#.*)$')
+line_re = re.compile(r'^ *[0-9a-f]+:\t *([0-9a-f][0-9a-f] )+ *\t([a-z][a-z0-9% \(\),\*\$:\-]*) *(<[^>]+>)?(?: *|#.*)$')
 assert(line_re.match('   166f8:\tc3                   \tretq'))
+assert(line_re.match('   18161:	41 ff 14 df          	callq  *(%r15,%rbx,8)'))
+
+
+opcode_re = re.compile(r'^((?:(?:data16|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+)(?: .*|)$')
+def test_op(instruction, expected):
+  m = opcode_re.match(instruction)
+  assert m, "f{instruction} didn't match opcode at all"
+  assert m[1] == expected, f"test_op({instruction}) got {m[1]}, expected {expected}"
+test_op('retq', 'retq')
+test_op('rep stos %rax,%es:(%rdi)', 'rep stos')
+test_op('lock incl (%ecx)', 'lock incl')
+test_op('data16 nopw %cs:0x0(%rax,%rax,1)', 'data16 nopw')
+test_op('sub ax,bx', 'sub')
+test_op('cvttss2si', 'cvttss2si')
+test_op('a b c', 'a')
+test_op('mov ax,20', 'mov')  # ;)
+test_op('jmp 0x123', 'jmp')
+test_op('callq *0x123', 'callq')
+
 
 import collections
 instructions = collections.defaultdict(int)
 opcodes = collections.defaultdict(int)
 registers = collections.defaultdict(int)
 
+total_instruction_count = 0
+
+import sys
 import fileinput
+
 with fileinput.input() as f:
   for line in f:
-    m = line_re.match(line.rstrip())
+    line = line.rstrip()
+    m = line_re.match(line)
     if not m:
+      # Debugging unmatched lines.
+      # print(line)
       continue
     instruction = m.group(2).strip()  # including immediates, registers, flags, etc.
     instructions[instruction] += 1
     instruction = re.sub(r'0x[0-9a-f]+', "0x???", instruction)
 
-    arguments = re.sub(r'^[a-z0-9]+(?: +([^ ].*)|)$', r'\1', instruction)  # Strip the opcode. # The (?:  |) is to support retq, cltd, etc
+    arguments = re.sub(r'^(?:(?:data16|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+(?: +([^ ].*)|)$', r'\1', instruction)  # Strip the opcode. # The (?:  |) is to support retq, cltd, etc
     arguments = re.sub("[(),]", " ", arguments)  # We leave indirect calls and jumps, like jmpq *0x???, or callq *%rax
     for register in arguments.strip().split():
       register = register.strip()
@@ -86,14 +130,26 @@ with fileinput.input() as f:
       register = re.sub(r'^[0-9a-f]{4,4}$', '1111', register)
       register = re.sub(r'^[0-9a-f]{3,3}$', '111', register)
       register = re.sub(r'^[0-9a-f]{2,2}$', '11', register)
+      if register == "*":
+         # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
+         continue 
       registers[register] += 1
 
     # opcodes[opcode] += 1
-    opcode = re.sub(" +.*", "", instruction)  # Strip arguments.  # Note. This regexp also works for retq, cltd actually.
+    opcode = opcode_re.match(instruction)
+    if not opcode:
+      print(f'Warning: Unrecognized instruction format: {instruction}. Please report a bug.', file=sys.stderr)
+      continue
+    opcode = opcode[1]
     opcodes[opcode] += 1
+    total_instruction_count += 1
+
+# For debugging what is not captured yet by regexp.
+# print(total_instruction_count)
 
 #for instruction in sorted(instructions, key=lambda instruction: instructions[instruction], reverse=True):
 #  print(instructions[instruction], instruction)
+
 
 print("Opcode statistics:")
 width = None

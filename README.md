@@ -14,7 +14,6 @@ Simple use:
 
 ```
 # ./elf-opcode-stats.py /bin/echo
-
 ```
 
 # TODO

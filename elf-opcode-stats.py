@@ -126,6 +126,7 @@ def process_data(f):
     arguments = re.sub("[(),]", " ", arguments)  # We leave indirect calls and jumps, like jmpq *0x???, or callq *%rax
     for register in arguments.strip().split():
       register = register.strip()
+      register = re.sub(r'^[0-9a-f]{7,7}$', '1111111', register)
       register = re.sub(r'^[0-9a-f]{6,6}$', '111111', register)
       register = re.sub(r'^[0-9a-f]{5,5}$', '11111', register)
       register = re.sub(r'^[0-9a-f]{4,4}$', '1111', register)

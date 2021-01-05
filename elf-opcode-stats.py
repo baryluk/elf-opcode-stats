@@ -106,6 +106,8 @@ registers = collections.defaultdict(int)
 
 total_instruction_count = 0
 
+def register_replacer(m):
+  return '1'*len(m.group(0))
 
 def process_data(f):
   global instructions, opcodes, registers, total_instruction_count
@@ -126,12 +128,7 @@ def process_data(f):
     arguments = re.sub("[(),]", " ", arguments)  # We leave indirect calls and jumps, like jmpq *0x???, or callq *%rax
     for register in arguments.strip().split():
       register = register.strip()
-      register = re.sub(r'^[0-9a-f]{7,7}$', '1111111', register)
-      register = re.sub(r'^[0-9a-f]{6,6}$', '111111', register)
-      register = re.sub(r'^[0-9a-f]{5,5}$', '11111', register)
-      register = re.sub(r'^[0-9a-f]{4,4}$', '1111', register)
-      register = re.sub(r'^[0-9a-f]{3,3}$', '111', register)
-      register = re.sub(r'^[0-9a-f]{2,2}$', '11', register)
+      register = re.sub(r'^[0-9a-f]{2,7}$', register_replacer, register)
       if register == "*":
          # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
          continue 

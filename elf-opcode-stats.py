@@ -111,6 +111,8 @@ def register_replacer(m):
   return '1'*len(m.group(0))
 
 tr_table = "".maketrans("(),", "   ")
+# This doesn't just match register. It is just more "parameters" (immediates, registers, etc)
+register_re = re.compile(r'^[0-9a-f]{2,7}$')
 
 def process_data(f):
   global instructions, opcodes, registers, total_instruction_count
@@ -141,7 +143,7 @@ def process_data(f):
     arguments = instruction[len(opcode):].lstrip()
     arguments = arguments.translate(tr_table)
     for register in arguments.split():
-      register = re.sub(r'^[0-9a-f]{2,7}$', register_replacer, register)
+      register = register_re.sub(register_replacer, register)
       if register == "*":
          # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
          continue

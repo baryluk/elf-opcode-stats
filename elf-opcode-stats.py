@@ -78,7 +78,7 @@ import re
 #  1cad20:	66 66 66 64 48 8b 04 	data16 data16 data16 mov %fs:0x0,%rax
 
 
-line_re = re.compile(r'^ *[0-9a-f]+:\t *(?:[0-9a-f][0-9a-f] )+ *\t([a-z][a-z0-9% \(\),\*\$:\-]*) *(<[^>]+>)?(?: *|#.*)$')
+line_re = re.compile(r'^ *[0-9a-f]+:\t *(?:[0-9a-f][0-9a-f] )+ *\t([a-z][a-z0-9% \(\),\*\$:\-]*) *(?:<[^>]+>)?(?: *|#.*)$')
 assert(line_re.match('   166f8:\tc3                   \tretq'))
 assert(line_re.match('   18161:	41 ff 14 df          	callq  *(%r15,%rbx,8)'))
 

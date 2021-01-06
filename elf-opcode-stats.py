@@ -78,14 +78,12 @@ import re
 #  1cad20:	66 66 66 64 48 8b 04 	data16 data16 data16 mov %fs:0x0,%rax
 
 
-line_re = re.compile(r'^ *[0-9a-f]+:\t *(?:[0-9a-f][0-9a-f] )+ *\t([a-z][a-z0-9% \(\),\*\$:\-]*) *(?:<[^>]+>)?(?: *|#.*)$')
+line_re = re.compile(r'^ *[0-9a-f]+:\t *(?:[0-9a-f][0-9a-f] )+ *\t((?:(?:data16(?: data16)*|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+)( +[a-z0-9% \(\),\*\$:\-]*)? *(?:<[^>]+>)?(?: *|#.*)$')
 assert(line_re.match('   166f8:\tc3                   \tretq'))
 assert(line_re.match('   18161:	41 ff 14 df          	callq  *(%r15,%rbx,8)'))
 
-
-opcode_re = re.compile(r'^((?:(?:data16(?: data16)*|rep|repe|repz|repne|repnz|lock) )?[a-z0-9]+)(?: .*|)$')
 def test_op(instruction, expected):
-  m = opcode_re.match(instruction)
+  m = line_re.match("   166f8:\tc3                   \t" + instruction)
   assert m, "f{instruction} didn't match opcode at all"
   assert m[1] == expected, f"test_op({instruction}) got {m[1]}, expected {expected}"
 test_op('retq', 'retq')
@@ -125,33 +123,24 @@ def process_data(f):
       # Debugging unmatched lines.
       # print(line)
       continue
-    instruction = m.group(1).strip()  # including immediates, registers, flags, etc.
-    # Disable this by default, as it consumes memory quite a lot.
-    # instructions[instruction] += 1
-    instruction = imm_hex_re.sub("0x???", instruction)
-
-    # opcodes[opcode] += 1
-    opcode = opcode_re.match(instruction)
-    if not opcode:
-      print(f'Warning: Unrecognized instruction format: {instruction}. Please report a bug.', file=sys.stderr)
-      continue
-    opcode = opcode[1]
-    assert instruction.startswith(opcode)
+    opcode = m.group(1)
     opcodes[opcode] += 1
     total_instruction_count += 1
 
-    arguments = instruction[len(opcode):].lstrip()
-    arguments = arguments.translate(tr_table)
-    for register in arguments.split():
-      register = long_decimal_re.sub(register_replacer, register)
-      registers[register] += 1
+    arguments = m.group(2)
+    if arguments:
+      arguments = imm_hex_re.sub("0x???", arguments)
+      arguments = arguments.translate(tr_table)
+      for register in arguments.split():
+        register = long_decimal_re.sub(register_replacer, register)
+        registers[register] += 1
 
-# We do this outside of the main loop, as these happen
-# infrequently, and having simpler loop probably speeds
-# things up.
-# From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
-if "*" in registers:
-  del registers["*"]
+  # We do this outside of the main loop, as these happen
+  # infrequently, and having simpler loop probably speeds
+  # things up.
+  # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
+  if "*" in registers:
+    del registers["*"]
 
 import sys
 import subprocess

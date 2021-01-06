@@ -144,10 +144,14 @@ def process_data(f):
     arguments = arguments.translate(tr_table)
     for register in arguments.split():
       register = long_decimal_re.sub(register_replacer, register)
-      if register == "*":
-         # From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
-         continue
       registers[register] += 1
+
+# We do this outside of the main loop, as these happen
+# infrequently, and having simpler loop probably speeds
+# things up.
+# From things like "callq  *(%r15,%rbx,8)", this is because we break on (, and "*" become loose.
+if "*" in registers:
+  del registers["*"]
 
 import sys
 import subprocess

@@ -101,21 +101,62 @@ test_op('data16 data16 data16 mov %fs:0x0,%rax', 'data16 data16 data16 mov')
 import collections
 instructions = collections.defaultdict(int)
 opcodes = collections.defaultdict(int)
+# This are both registers, and immediates.
+# Immediates are converted to canonical form, i.e. 0xea13 is converted to 0x????
+# This is to reduce the noise, and make more meaningful list, but still giving
+# little bit of insight about the size of immediates.
 registers = collections.defaultdict(int)
+# This is list of canonical forms for immediates, mapped to a count
+# of non-canonical forms, i.e. '0x????': {'0xea13': 5, '0xffff': 9, ...}
+# This can be pretty big in size.
+registers_full = collections.defaultdict(lambda: collections.defaultdict(int))
 
 total_instruction_count = 0
 
-def register_replacer(m):
-  return '1'*len(m.group(0))
+def long_immediate_replacer(m):
+  full = m.group(1)
+  # We use the fact that the string is at least 2 characters.
+  if full[1] == 'x':
+    return '0x' + '?'*(len(m.group(1))-2)
+  else:
+    return '1'*len(m.group(1))
 
 tr_table = "".maketrans("(),", "   ")
 
-imm_hex_re = re.compile(r'0x[0-9a-f]+')
-long_decimal_re = re.compile(r'^[0-9a-f]{2,7}$')
+long_immediate_re = re.compile(r'(^[0-9a-f]{2,7}$|0x[0-9a-f][0-9a-f]+)')
+
+# Non-numeric stuff is left untouched.
+assert(long_immediate_re.sub(long_immediate_replacer, 'st') == 'st')
+assert(long_immediate_re.sub(long_immediate_replacer, '%eax') == '%eax')
+
+# Long ones are trimmed.
+assert(long_immediate_re.sub(long_immediate_replacer, '12361233') == '12361233')
+assert(long_immediate_re.sub(long_immediate_replacer, '123612') == '111111')
+assert(long_immediate_re.sub(long_immediate_replacer, '123') == '111')
+assert(long_immediate_re.sub(long_immediate_replacer, '42') == '11')
+assert(long_immediate_re.sub(long_immediate_replacer, '0x5ef123') == '0x??????')
+assert(long_immediate_re.sub(long_immediate_replacer, '0x5ef') == '0x???')
+assert(long_immediate_re.sub(long_immediate_replacer, '-23') == '-23')
+#assert(long_immediate_re.sub(long_immediate_replacer, '-0x21') == '-0x21')
+assert(long_immediate_re.sub(long_immediate_replacer, '-0x21') == '-0x??')
+#assert(long_immediate_re.sub(long_immediate_replacer, '$0x20000002b') == '$0x20000002b')
+assert(long_immediate_re.sub(long_immediate_replacer, '$0x20000002b') == '$0x?????????')
+#assert(long_immediate_re.sub(long_immediate_replacer, '$0x3f3f3f3f3f3f3f3f') == '$0x3f3f3f3f3f3f3f3f')
+assert(long_immediate_re.sub(long_immediate_replacer, '$0x3f3f3f3f3f3f3f3f') == '$0x????????????????')
+#assert(long_immediate_re.sub(long_immediate_replacer, '*0xcf2b') == '*0xcf2b')
+assert(long_immediate_re.sub(long_immediate_replacer, '*0xcf2b') == '*0x????')
+
+# Short ones are untouched.
+assert(long_immediate_re.sub(long_immediate_replacer, '5') == '5')
+assert(long_immediate_re.sub(long_immediate_replacer, '8') == '8')
+assert(long_immediate_re.sub(long_immediate_replacer, '0') == '0')
+assert(long_immediate_re.sub(long_immediate_replacer, '0x1') == '0x1')
+assert(long_immediate_re.sub(long_immediate_replacer, '%cs:0x0') == '%cs:0x0')
+
 
 def process_data(f):
-  global instructions, opcodes, registers, total_instruction_count
-  global line_re, opcode_re
+  global opcodes, registers, total_instruction_count
+  global line_re
   for line in f:
     # line = line.rstrip()
     m = line_re.match(line)
@@ -123,17 +164,17 @@ def process_data(f):
       # Debugging unmatched lines.
       # print(line)
       continue
-    opcode = m.group(1)
-    opcodes[opcode] += 1
+    opcodes[m.group(1)] += 1
     total_instruction_count += 1
 
     arguments = m.group(2)
     if arguments:
-      arguments = imm_hex_re.sub("0x???", arguments)
       arguments = arguments.translate(tr_table)
       for register in arguments.split():
-        register = long_decimal_re.sub(register_replacer, register)
-        registers[register] += 1
+        canonical_register = long_immediate_re.sub(long_immediate_replacer, register)
+        registers[canonical_register] += 1
+        if canonical_register != register:
+          registers_full[canonical_register][register] += 1
 
   # We do this outside of the main loop, as these happen
   # infrequently, and having simpler loop probably speeds
@@ -156,13 +197,32 @@ else:
 # print(total_instruction_count)
 
 
-def print_stats(d:dict):
+def print_stats(d:dict, d2:dict=None):
+  """Print dict(int) d, in a sorted manner, with highest ones first,
+  and count column having constant width.
+
+  Additionally, if d2 is presnet, which should be dict(dict(int)),
+  check keys in it, and if present, display top values from this
+  dict in a sorted manner."""
   width = None
   for k in sorted(d, key=lambda k: d[k], reverse=True):
     v = d[k]
     if not width:
       width = len(str(v))
-    print(f"{v:{width}}", k)
+    suffix = ""
+    if d2:
+      if k in d2:
+        d3 = d2[k]
+        top = ""
+        for k3 in sorted(d3, key=lambda k3: d3[k3], reverse=True):
+          if top:
+            top += ", "
+          if len(top) > 90:
+            top += "…"
+            break
+          top += f"{d3[k3]}× {k3}"
+        suffix += f" ({len(d3)} unique. Top: {top})"
+    print(f"{v:{width}} {k}{suffix}")
 
 # print("Instruction statistics:")
 # print_stats(instructions)
@@ -173,4 +233,4 @@ print_stats(opcodes)
 
 print()
 print("Register and other opcode arguments statistics in general (source and destination):")
-print_stats(registers)
+print_stats(registers, registers_full)

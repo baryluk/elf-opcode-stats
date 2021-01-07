@@ -190,13 +190,12 @@ Opcode statistics:
    1 testl
 
 Register and other opcode arguments statistics in general (source and destination):
-4523 0x???
 4168 %rax
-3743 $0x???
-3053 1111
+3053 1111 (1487 unique. Top: 105× 4020, 84× 41e0, 68× 40a0, 60× 46c0, 58× 49b0, 57× 4200, 51× 4220, 45× 43a0, 40× 4380, …)
+1841 0x?? (67 unique. Top: 224× 0x10, 180× 0x30, 164× 0x18, 163× 0x28, 138× 0x20, 108× 0x48, 90× 0xac, 72× 0x38, 71× 0xa8, …)
 1802 %rsp
 1752 %eax
-1519 11111
+1519 11111 (939 unique. Top: 24× 12340, 23× 16b90, 22× 169f0, 21× 151c0, 17× 121f0, 12× 13ec9, 11× 121b7, 10× 116a0, 10× 12c78, …)
 1484 %rdi
 1380 %rip
 1368 %rbx
@@ -205,70 +204,125 @@ Register and other opcode arguments statistics in general (source and destinatio
 1028 %rdx
  991 %edx
  963 %r12
+ 947 0x????? (934 unique. Top: 2× 0x20aa2, 2× 0x20a28, 2× 0x1f3e1, 2× 0x2035b, 2× 0x202f2, 2× 0x1ec6d, 2× 0x1e5a6, 2× 0x14a9a, …)
+ 940 $0x?? (124 unique. Top: 77× $0x20, 63× $0x30, 57× $0x10, 45× $0x2f, 39× $0x2e, 33× $0x18, 33× $0x48, 29× $0x1f, 25× $0x2b, …)
  745 1
+ 731 0x0
  730 %rcx
+ 689 $0x1
  675 %r13
  646 %edi
  545 %r14
  518 %r15
+ 506 $0x0
  505 %esi
  467 %al
  441 %ecx
+ 361 0x8
  348 %r8
+ 325 0x???? (317 unique. Top: 2× 0x2028, 2× 0x2038, 2× 0x1318, 2× 0x1000, 2× 0xfc24, 2× 0xfb84, 2× 0xfae4, 2× 0xfa44, 1× 0x9dde, …)
+ 273 $0x???? (22 unique. Top: 120× $0x4000, 96× $0xf000, 10× $0x1000, 8× $0xa000, 5× $0x2000, 4× $0x8000, 3× $0xc000, 3× $0x2520, …)
  257 %r8d
+ 216 $0x8
  204 %r12d
  200 %dl
- 189 -0x???
  189 %r9
  182 %ebx
- 168 %cs:0x???
+ 168 %cs:0x0
  165 %ebp
  158 %ax
- 121 *0x???
+ 157 $0x???????? (26 unique. Top: 86× $0xffffffff, 8× $0xfffffffd, 7× $0xffffff9c, 6× $0x7fffffff, 5× $0xfffff894, 4× $0xfffffff8, …)
+ 154 $0x2
+ 140 0x1
+ 124 $0x???????????????? (23 unique. Top: 69× $0xffffffffffffffff, 12× $0xfffffffffffffff8, 8× $0xffffffff92492493, 5× $0xfffffffffffffffe, …)
+ 119 $0x3
  115 %r13d
  112 %r9d
- 107 %fs:0x???
+ 111 $0x5
+ 110 *0x????? (110 unique. Top: 1× *0x1ffe4, 1× *0x1ffe2, 1× *0x1ffda, 1× *0x1ffd2, 1× *0x1ffca, 1× *0x1ffc2, 1× *0x1ffba, …)
+ 107 %fs:0x?? (1 unique. Top: 107× %fs:0x28)
  106 %r11d
  106 %xmm0
+ 104 $0x??? (42 unique. Top: 16× $0x400, 12× $0x100, 10× $0x200, 4× $0x118, 4× $0x2a8, 4× $0x358, 3× $0x800, 3× $0xfff, …)
+ 102 $0x9
   97 %r10
   97 %st
   92 %cl
+  89 $0x4
   75 %r15d
   73 %xmm1
   71 %r14d
   66 %r11
+  60 $0xa
+  60 -0x1
   58 8
   54 4
   50 %r10d
+  48 -0x??? (12 unique. Top: 20× -0x390, 9× -0x384, 8× -0x2d0, 2× -0x386, 2× -0x385, 1× -0x253, 1× -0xffa, 1× -0x2f0, 1× -0x380, …)
+  45 -0x?? (17 unique. Top: 15× -0x30, 7× -0x61, 4× -0x18, 3× -0x10, 2× -0x38, 2× -0x16, 2× -0x41, 1× -0x40, 1× -0x57, …)
+  39 0x??? (18 unique. Top: 5× 0x108, 4× 0x298, 4× 0x348, 3× 0x100, 3× 0x508, 3× 0x76c, 2× 0x648, 2× 0x4d0, 2× 0x286, 2× 0x4a8, …)
   37 %r12b
   35 %sil
   35 2
+  34 0x2
   31 %bpl
+  31 0x4
   30 %r13b
   29 %xmm2
   26 %dil
+  23 $0x7
+  23 $0xc
   23 %r15b
+  23 0xc
   21 *%rax
+  18 $0x6
   17 0
+  14 -0x8
   13 %r8b
+  12 0x3
+  12 -0x2
   11 %bl
+  11 0x9
   10 %r9b
    9 %ah
+   9 *0x?? (3 unique. Top: 5× *0x30, 3× *0x38, 1× *0x40)
    8 %r14b
+   8 0x7
    7 %xmm3
    7 *%rbp
+   7 -0x4
+   6 $0xd
+   6 0xf
    6 %es:
+   6 0x6
    6 *%rdx
+   6 $0x??????? (3 unique. Top: 2× $0x51eb850, 2× $0x28f5c28, 2× $0x4000000)
+   5 $0xb
+   5 $0xe
    5 %xmm4
    5 %dx
    5 %ds:
+   4 $0xf
+   4 0x5
+   3 $0x????? (2 unique. Top: 2× $0xfff00, 1× $0x2000e)
    2 *%rcx
    2 %r8w
    2 %xmm5
    2 %xmm6
    2 %xmm7
+   2 0xb
+   2 0xa
    2 3
+   2 $0x??????????????? (2 unique. Top: 1× $0x800000000000000, 1× $0x400000000000000)
+   2 *0x???? (2 unique. Top: 1× *0xcf2b, 1× *0xcdbb)
+   1 -0x???? (1 unique. Top: 1× -0x1a24)
+   1 $0x??????????? (1 unique. Top: 1× $0xffffff00000)
    1 %r10w
+   1 -0x?????? (1 unique. Top: 1× -0xf0c2ac)
    1 %cx
    1 *%rbx
+   1 $0x?????? (1 unique. Top: 1× $0xa3d70b)
+   1 -0x6
+   1 $0x????????? (1 unique. Top: 1× $0x20000002b)
+   1 $0x?????????? (1 unique. Top: 1× $0x1000401001)
 ```
